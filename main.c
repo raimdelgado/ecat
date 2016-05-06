@@ -53,7 +53,7 @@ void EcatCtrlTask(void *arg){
 	/* send process data */
 	   EcatSendProcessDomain();
 	   
-#if 1 // change 0 to 1 for processing
+#if 0 //  0 to omit : 1 for processing
 
 	   if (!(iTaskTick % FREQ_PERSEC(ECATCTRL_TASK_PERIOD))){
 		/*Do every 1 second */
