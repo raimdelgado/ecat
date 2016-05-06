@@ -23,6 +23,7 @@ void SignalHandler(int signum);
 
 void EcatCtrlTask(void *arg){
 
+	int iTaskTick = 0;
 #ifdef MEASURE_TIMING
 	RtmEcatPeriodEnd = rt_timer_read();
 #endif
@@ -52,9 +53,9 @@ void EcatCtrlTask(void *arg){
 	/* send process data */
 	   EcatSendProcessDomain();
 	   
-#if 0 // change 0 to 1 for processing
+#if 1 // change 0 to 1 for processing
 
-	   if (!(rtCnt % FREQUENCY)){
+	   if (!(iTaskTick % FREQ_PERSEC(ECATCTRL_TASK_PERIOD))){
 		/*Do every 1 second */
 
 		   rt_printf("Master State:%u Slave State:%u Slave Number:%u \n",
@@ -69,7 +70,7 @@ void EcatCtrlTask(void *arg){
    	   RtmEcatPeriodEnd = RtmEcatPeriodStart;
 #endif
 
-	   rtCnt++;
+	   iTaskTick++;
 
     }
 }

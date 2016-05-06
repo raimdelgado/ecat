@@ -45,6 +45,7 @@
 #define INPTCTRL_TASK_PRIORITY	(80) // xeno: 99 , preempt: 80
 #define INPTCTRL_TASK_PERIOD	(10000000L)
 
+
 RT_TASK TskEcatCtrl;
 RT_TASK TskInptCtrl;
 
@@ -56,12 +57,10 @@ RTIME RtmEcatPeriodStart=0, RtmEcatPeriodEnd=0, RtmEcatExecTime=0;
 #endif
 
 /*****************************************************************************/
-/*variables */
+/* global variables */
 /*****************************************************************************/
-#define NSEC_PER_USEC		(1000L)
-#define NSEC_PER_MSEC		(1000000L)
-#define NSEC_PER_SEC		(1000000000L)
-#define FREQUENCY		(1000)
+#define	NANOSEC_PER_SEC		(1000000000L)
+#define FREQ_PERSEC(x)		(NANOSEC_PER_SEC/(x))
 
 /* ECAT_STAT:
  * unsigned int  master_state;
@@ -70,7 +69,6 @@ RTIME RtmEcatPeriodStart=0, RtmEcatPeriodEnd=0, RtmEcatExecTime=0;
 
 ECAT_STAT	EcatStat;
 
-unsigned int	rtCnt		= 0;
 int		quitFlag	= 0;
 char		InptChar	= 0; 
 /*****************************************************************************/
