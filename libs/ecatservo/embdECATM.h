@@ -23,12 +23,15 @@
 /****************************************************************************/
 #include "ptlLSMECA.h"
 /****************************************************************************/
-
+#include <embdCOMMON.h> // ../embedded
+/****************************************************************************/
 /*EtherCAT State Machine*/
-#define INIT			(0x01)
-#define PREOP			(0x02)
-#define SAFEOP			(0x04)
-#define	OP			(0x08)
+typedef enum {
+	INIT 	= 0x01,
+	PREOP	= 0x02,
+	SAFEOP	= 0x04,
+	OP	= 0x08,
+} EcatStateMach;
 
 /* Slaves  */
 #define ALIAS_POSITION(x) 	0,x
@@ -46,7 +49,7 @@ typedef struct EcatStatus {
 	unsigned int master_state;
 	unsigned int slave_state;
 	unsigned int slave_number;
-} ECAT_STAT;
+} ECAT_STATE;
 
 /*****************************************************************************/
 /* Public Functions */
@@ -57,7 +60,7 @@ int  EcatInit(int cycleTime, int operationMode);
 void EcatQuit(void);
 void EcatReceiveProcessDomain(void);
 void EcatSendProcessDomain(void);
-ECAT_STAT EcatStatusCheck(void);
+ECAT_STATE EcatStatusCheck(void);
 
 /* LS Mecapion Servo Control*/
 void lsmecaReady(int iNode);

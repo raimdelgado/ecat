@@ -99,9 +99,9 @@ void EcatCheckSlaveStates(unsigned int *slaveState){
     *slaveState = s.al_state;
 }
 /*****************************************************************************/
-ECAT_STAT EcatStatusCheck(void){
+ECAT_STATE EcatStatusCheck(void){
 
-	ECAT_STAT EcatCheck;
+	ECAT_STATE EcatCheck;
 	unsigned int slaveState = 0, masterState = 0 , respondingSlaves = 0;
 
 	EcatCheckMasterState(&masterState, &respondingSlaves);
@@ -148,13 +148,13 @@ int EcatInit(int cycleTime, int operationMode){
   	/*1.Request Master Instance */
 	eMaster = ecrt_request_master(0);
 	if (!eMaster){
-		return -1;
+		return _EMBD_RET_ERR_;
 	}
 
 	/*2.Create Domain */
 	eDomain = ecrt_master_create_domain(eMaster);
     	if (!eDomain){
-	return -1;
+	return _EMBD_RET_ERR_;
 	}
 
 	/*3.Slave Config */
@@ -165,20 +165,20 @@ int EcatInit(int cycleTime, int operationMode){
 							ALIAS_POSITION(i),
 							LS_SERVO))){
         		fprintf(stderr, "Failed to get slave configuration.\n");
-		       	return -1;
+		       	return _EMBD_RET_ERR_;
     		}
 
 		/*4. Configure PDOS*/
 		if (ecrt_slave_config_pdos(slaveConf, EC_END, lsmecapion_syncs)){
 		       	fprintf(stderr, "Failed to configure out PDOs.\n");
-        		return -1;
+        		return _EMBD_RET_ERR_;
     		}
 
 		/*5. SDO write */
 		if (ecrt_slave_config_sdo8(slaveConf,LSMECAPION_OPERATION_MODE, 
 					 operationMode)){
 	        	fprintf(stderr, "Failed to config SDOs.\n");
-	        	return -1;
+	        	return _EMBD_RET_ERR_;
 		}
 
 		/*6. DC setup*/
@@ -189,24 +189,24 @@ int EcatInit(int cycleTime, int operationMode){
 	/*7. Domain Register*/
 	if (ecrt_domain_reg_pdo_entry_list(eDomain, embdDomain_regs)) {	
 		fprintf(stderr, "PDO entry registration failed!\n");
-		return -1;
+		return _EMBD_RET_ERR_;
     	}
 
 	/*8. Start Master and Register Domain */
       	printf("\033[%dm%s\033[0m",94,"\nStarting EtherCAT Master...");
      	
 	if (ecrt_master_activate(eMaster)){
-	   return -1;
+	   return _EMBD_RET_ERR_;
      	}
 
      	if (!(eDomain_pd = ecrt_domain_data(eDomain))) {
-        return -1;
+        return _EMBD_RET_ERR_;
 
     	}
         
       	printf("\033[%dm%s\033[0m",94,"OK!\n");
  
-return 0;
+return _EMBD_RET_SCC_;
 }
 /*****************************************************************************/
 void EcatQuit(void){

@@ -15,7 +15,7 @@
 #include "main.h"
 /****************************************************************************/
 /* Private Functions */
-void XenoInit(void);
+int  XenoInit(void);
 void XenoQuit(void);
 void DoInput();
 void SignalHandler(int signum);
@@ -30,6 +30,7 @@ void EcatCtrlTask(void *arg){
    while (1) {
 
 	   rt_task_wait_period(NULL);
+
 #ifdef MEASURE_TIMING
 	   RtmEcatPeriodStart = rt_timer_read();
 #endif
@@ -37,10 +38,11 @@ void EcatCtrlTask(void *arg){
 	   EcatReceiveProcessDomain();
 
     	/* check process data state (optional) */
-	   EcatStat = EcatStatusCheck(); 
+	   EcatState = EcatStatusCheck(); 
 
-	/*Do reading of the current process data from here
-	 * before processing 
+	/*
+	 * Do reading of the current process data from here
+	 * before processing and sending to Tx
 	 */ 
 
 	/* Input Command */
@@ -55,23 +57,38 @@ void EcatCtrlTask(void *arg){
 	   
 #if 0 //  0 to omit : 1 for processing
 
-	   if (!(iTaskTick % FREQ_PERSEC(ECATCTRL_TASK_PERIOD))){
+	   if (!(iTaskTick % FREQ_PER_SEC(ECATCTRL_TASK_PERIOD))){
 		/*Do every 1 second */
 
-		   rt_printf("Master State:%u Slave State:%u Slave Number:%u \n",
-				   EcatStat.master_state, 
-				   EcatStat.slave_state,
-				   EcatStat.slave_number); 
-	   }
+		rt_printf("Task Duration: %d s\n", iTaskTick/FREQ_PER_SEC(ECATCTRL_TASK_PERIOD));	
+		}
 #endif
-		
 #ifdef MEASURE_TIMING	    
 	   RtmEcatExecTime = rt_timer_read();
-   	   RtmEcatPeriodEnd = RtmEcatPeriodStart;
+	   if(EcatState.master_state == OP && EcatState.slave_state == OP  ) {
+
+		   if(iBufEcatDataCnt == BUF_SIZE){
+			   rt_printf("\nExceeded Queue Size\n");
+	   		   lsmecaShutDown(_ALLNODE);
+			   quitFlag = 1;
+			   break;
+		   }
+	   	  
+		   BufEcatPeriodTime[iBufEcatDataCnt] =  (long)(RtmEcatPeriodStart - RtmEcatPeriodEnd);
+	   	   BufEcatExecTime[iBufEcatDataCnt]  =   (long)(RtmEcatExecTime - RtmEcatPeriodStart);
+	   	   ++iBufEcatDataCnt;
+	   }
 #endif
 
-	   iTaskTick++;
+	/*
+	 * Do other processes 
+	 * after EtherCAT execution 
+	 */ 
 
+#ifdef MEASURE_TIMING	    
+   	   RtmEcatPeriodEnd = RtmEcatPeriodStart;
+#endif
+	   iTaskTick++;
     }
 }
 
@@ -91,6 +108,7 @@ void InptCtrlTask(void *arg){
 int main(int argc, char **argv){
    	 
 	int ret = 0;
+
 	
 	/* Interrupt Handler "ctrl+c"  */
 	signal(SIGTERM, SignalHandler);
@@ -100,19 +118,53 @@ int main(int argc, char **argv){
    	if ((ret = EcatInit(ECATCTRL_TASK_PERIOD,LSMECA_CYCLIC_VELOCITY))!=0){
 		fprintf(stderr, 
 			"Failed to Initiate IgH EtherCAT Master!\n");
+		return ret;
 	}
 
 	mlockall(MCL_CURRENT|MCL_FUTURE); //Lock Memory to Avoid Memory Swapping
 
 	/* RT-task */
 
-	XenoInit();
+	if ((ret = XenoInit())!=0){
+		fprintf(stderr, 
+			"Failed to Initiate Xenomai Services!\n");
+		return ret;
+	}
 
 	while (1) {
 		usleep(1);
 		if (quitFlag) break;
 	}
-   	
+
+#ifdef MEASURE_TIMING
+#ifdef PRINT_TIMING
+	int iCnt;
+	FileEcatTiming = fopen("EcatCtrl-Timing.csv", "w");
+	for(iCnt=0; iCnt < iBufEcatDataCnt; ++iCnt){
+
+		fprintf(FileEcatTiming,"%ld.%06ld,%ld.%03ld\n",BufEcatPeriodTime[iCnt]/SCALE_1M,
+				BufEcatPeriodTime[iCnt]%SCALE_1M,
+				BufEcatExecTime[iCnt]/SCALE_1K,
+				BufEcatExecTime[iCnt]%SCALE_1K);
+
+	}
+	fclose(FileEcatTiming);
+#endif
+
+	EcatPeriodStat = GetStatistics(BufEcatPeriodTime, iBufEcatDataCnt,SCALE_1M);  
+	printf("\n[Period] Max: %.6f Min: %.6f Ave: %.6f St. D: %.6f\n", EcatPeriodStat.max,
+			EcatPeriodStat.min,
+			EcatPeriodStat.ave,
+			EcatPeriodStat.std);
+	EcatExecStat = GetStatistics(BufEcatExecTime, iBufEcatDataCnt,SCALE_1K);  
+	printf("[Exec]	 Max: %.3f Min: %.3f Ave: %.3f St. D: %.3f\n", EcatExecStat.max,
+			EcatExecStat.min,
+			EcatExecStat.ave,
+			EcatExecStat.std);
+
+
+#endif
+
 	XenoQuit();
 	EcatQuit();
 
@@ -169,25 +221,59 @@ void SignalHandler(int signum){
 
 /****************************************************************************/
 
-void XenoInit(void){
+int XenoInit(void){
 
 	rt_print_auto_init(1); //RTDK
 
 	printf("Creating Xenomai Realtime Task(s)...");
-	rt_task_create(&TskEcatCtrl,"EtherCAT Control", 0, ECATCTRL_TASK_PRIORITY,ECATCTRL_TASK_MODE);
-	rt_task_create(&TskInptCtrl,"Input Control", 0, INPTCTRL_TASK_PRIORITY,ECATCTRL_TASK_MODE);
+	if(rt_task_create(&TskEcatCtrl,"EtherCAT Control", 0, ECATCTRL_TASK_PRIORITY,ECATCTRL_TASK_MODE)){
+	
+        		fprintf(stderr, "Failed to create Ecat Control Task\n");
+			return _EMBD_RET_ERR_;
+	
+	}
+
+	if(rt_task_create(&TskInptCtrl,"Input Control", 0, INPTCTRL_TASK_PRIORITY,ECATCTRL_TASK_MODE)){
+	
+	 		fprintf(stderr, "Failed to create Input Control Task\n");
+			return _EMBD_RET_ERR_;
+
+	}
+
 	printf("OK!\n");
 
 
 	printf("Making Realtime Task(s) Periodic...");
-	rt_task_set_periodic(&TskEcatCtrl, TM_NOW,rt_timer_ns2ticks(ECATCTRL_TASK_PERIOD));	
-	rt_task_set_periodic(&TskInptCtrl, TM_NOW,rt_timer_ns2ticks(INPTCTRL_TASK_PERIOD));
+	if(rt_task_set_periodic(&TskEcatCtrl, TM_NOW,rt_timer_ns2ticks(ECATCTRL_TASK_PERIOD))){
+	
+	 		fprintf(stderr, "Failed to Make Ecat Control Task Periodic\n");
+			return _EMBD_RET_ERR_;
+
+	}	
+	if(rt_task_set_periodic(&TskInptCtrl, TM_NOW,rt_timer_ns2ticks(INPTCTRL_TASK_PERIOD))){
+	
+	 		fprintf(stderr, "Failed to Make Input Control Task Periodic\n");
+			return _EMBD_RET_ERR_;
+
+	}
 	printf("OK!\n");
 
 	printf("Starting Xenomai Realtime Task(s)...");
-	rt_task_start(&TskEcatCtrl, &EcatCtrlTask, NULL);
-	rt_task_start(&TskInptCtrl, &InptCtrlTask, NULL);
+	if(rt_task_start(&TskEcatCtrl, &EcatCtrlTask, NULL)){
+	
+	 		fprintf(stderr, "Failed to start Ecat Control Task\n");
+			return _EMBD_RET_ERR_;
+
+	}
+	if(rt_task_start(&TskInptCtrl, &InptCtrlTask, NULL)){
+	
+	 		fprintf(stderr, "Failed to start Input Control Task\n");
+			return _EMBD_RET_ERR_;
+
+	}
 	printf("OK!\n");
+
+	return _EMBD_RET_SCC_;
 	
 }
 

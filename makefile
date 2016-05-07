@@ -20,7 +20,7 @@ LIB_XENO = $(shell $(XENOMAI_PATH)/bin/xeno-config --skin native --ldflags)
 LIB_DIR  = /opt/etherlab/lib 
 
 CFLAGS   = $(CFLAGS_OPTIONS) $(INC_DIRS)
-LDFLAGS	 = $(LIB_XENO) -L$(LIB_DIR) -lethercat_rtdm
+LDFLAGS	 = -lm $(LIB_XENO) -L$(LIB_DIR) -lethercat_rtdm
 
 SOURCES	= ./main.c\
 	  $(INC_SERVO)embdECATM.c
@@ -86,7 +86,8 @@ clean:
 		$(OBJ_DIR)   \
       		$(OUT_DIR)/* \
       		$(OUT_DIR)   \
-		$(START)*
+      		$(START)*    \
+		*.csv
 
 .PHONY: all clean 
 #######################################################################################################

@@ -1,13 +1,5 @@
 /*
  *  This file is owned by the Embedded Systems Laboratory of Seoul National University of Science and Technology
- *  to test EtherCAT master protocol using the IgH EtherCAT master userspace library.	
- *  
- *  
- *  IgH EtherCAT master library for Linux is found at the following URL: 
- *  <http://www.etherlab.org/en/ethercat>
- *
- *
- *
  *
  *  2015 Raimarius Delgado 
 */
