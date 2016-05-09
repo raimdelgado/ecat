@@ -13,34 +13,35 @@
 /****************************************************************************/
 
 typedef struct MathSimpleStatistics {
-	double ave;
-	double max;
-	double min;
-	double std;
+	float ave;
+	float max;
+	float min;
+	float std;
 } MATH_STATS;
 
 
-long MathAbsValI(long value);
-long MathArrayMax(long ArraySample[], int ArraySize);
-long MathArrayMin(long ArraySample[], int ArraySize);
+int MathAbsValI(int value);
+int MathArrayMaxI(int ArraySample[], int ArraySize);
+int MathArrayMinI(int ArraySample[], int ArraySize);
 
-double MathAbsValF(double value);
-double MathArrayAve(long ArraySample[], int ArraySize, int Scaling);
-double MathArrayStD(long ArraySample[], int ArraySize, int Scaling);
-//double MathArrayMax(long ArraySample[], int ArraySize); /* soon */
-//double MathArrayMin(long ArraySample[], int ArraySize); /* soon */
+float MathAbsValF(float value);
+float MathArrayAve(int ArraySample[], int ArraySize, int Scaling);
+float MathArrayStD(int ArraySample[], int ArraySize, int Scaling);
+
+//float MathArrayMaxF(int ArraySample[], int ArraySize); /* soon */
+//float MathArrayMinF(int ArraySample[], int ArraySize); /* soon */
 
 
 
 /****************************************************************************/
-long MathAbsValI(long AbsValue){
+int MathAbsValI(int AbsValue){
 	
 	if (AbsValue > 0 ) return AbsValue; 
 	else if (AbsValue < 0 ) return -AbsValue; 
 	else return 0;
 
 }
-double MathAbsValF(double AbsValue){
+float MathAbsValF(float AbsValue){
 	
 	if (AbsValue > 0 ) return AbsValue; 
 	else if (AbsValue < 0 ) return -AbsValue; 
@@ -48,10 +49,10 @@ double MathAbsValF(double AbsValue){
 
 }
 /****************************************************************************/
-long MathArrayMax(long ArraySample[], int ArraySize){
+int MathArrayMaxI(int ArraySample[], int ArraySize){
 	
 	int iCnt;
-	long MaxVal;
+	int MaxVal;
 
 	MaxVal = ArraySample[0];
 
@@ -65,10 +66,10 @@ long MathArrayMax(long ArraySample[], int ArraySize){
 	return MaxVal;
 }
 /****************************************************************************/
-long MathArrayMin(long ArraySample[], int ArraySize){
+int MathArrayMinI(int ArraySample[], int ArraySize){
 	
 	int iCnt;
-	long MinVal;
+	int MinVal;
 
 	MinVal = ArraySample[0];
 
@@ -83,51 +84,50 @@ long MathArrayMin(long ArraySample[], int ArraySize){
 }
 
 /****************************************************************************/
-double MathArrayAve(long ArraySample[], int ArraySize, int Scaling){
+float MathArrayAve(int ArraySample[], int ArraySize, int Scaling){
 	
 	int iCnt;
-	double CumSum=0;
-	double AveVal;
+	float CumSum=0;
+	float AveVal;
 
 	for (iCnt=0; iCnt < ArraySize; ++iCnt){
-		CumSum += ((double)ArraySample[iCnt]/Scaling);
+		CumSum += ((float)ArraySample[iCnt]/Scaling);
 	}
-	AveVal =((double)CumSum / ArraySize);
-//	printf("\n%ld %d %f \n",CumSum,ArraySize,AveVal/SCALE_1M);
+	AveVal =((float)CumSum / ArraySize);
 	return AveVal;
 }
 /****************************************************************************/
-double MathArrayStD(long ArraySample[], int ArraySize,int Scaling){
+float MathArrayStD(int ArraySample[], int ArraySize,int Scaling){
 	
 	int iCnt;
-	double AveVal;
-	double Variance;
-	double StDev;
+	float AveVal;
+	float Variance;
+	float StDev;
 
 	AveVal = MathArrayAve(ArraySample, ArraySize,Scaling);
 
 	for (iCnt=0; iCnt < ArraySize; ++iCnt){
-		Variance +=((((double)ArraySample[iCnt]/Scaling) - AveVal)) * ((((double)ArraySample[iCnt]/Scaling) - AveVal));
+		Variance +=((((float)ArraySample[iCnt]/Scaling) - AveVal)) * ((((float)ArraySample[iCnt]/Scaling) - AveVal));
 	}
 	StDev = sqrt(Variance / ArraySize);
 	return StDev;
 }
 /****************************************************************************/
-MATH_STATS GetStatistics(long ArraySample[], int ArraySize,int Scaling){
+MATH_STATS GetStatistics(int ArraySample[], int ArraySize,int Scaling){
 
 	MATH_STATS GetStats;	
-	long iMax, iMin;
-	double fStD;
-	double fAve;
+	int iMax, iMin;
+	float fStD;
+	float fAve;
 
-	iMax = MathArrayMax(ArraySample, ArraySize);	
-	iMin = MathArrayMin(ArraySample, ArraySize);	
+	iMax = MathArrayMaxI(ArraySample, ArraySize);	
+	iMin = MathArrayMinI(ArraySample, ArraySize);	
 	fAve = MathArrayAve(ArraySample, ArraySize,Scaling);	
 	fStD = MathArrayStD(ArraySample, ArraySize,Scaling);	
 	
 	GetStats.ave = fAve;
-	GetStats.max = ((double)iMax / Scaling);
-	GetStats.min = ((double)iMin / Scaling);
+	GetStats.max = ((float)iMax / Scaling);
+	GetStats.min = ((float)iMin / Scaling);
 	GetStats.std = fStD;
 
 	return GetStats;

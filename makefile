@@ -6,6 +6,7 @@
 #######################################################################################################
 
 XENOMAI_PATH=/usr/xenomai
+#XENOMAI_PATH=/rtProj/xenomai
 
 CFLAGS_OPTIONS = -Wall -D_GNU_SOURCE  
 
@@ -21,6 +22,7 @@ LIB_DIR  = /opt/etherlab/lib
 
 CFLAGS   = $(CFLAGS_OPTIONS) $(INC_DIRS)
 LDFLAGS	 = -lm $(LIB_XENO) -L$(LIB_DIR) -lethercat_rtdm
+#LDFLAGS	 = -lm $(LIB_XENO) -L$(LIB_DIR) -lethercat
 
 SOURCES	= ./main.c\
 	  $(INC_SERVO)embdECATM.c

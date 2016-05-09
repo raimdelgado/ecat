@@ -69,7 +69,7 @@ void lsmecaServoOff(int iNode);
 void lsmecaShutDown(int iNode);
 void lsmecaSetVelocity(int iNode, int RevPerMinute);
 void lsmecaSetAngularVelocity(int iNode, float AngularVelocity);
-unsigned short lsmecaGetStatusN(int iNode);
+unsigned short lsmecaGetStatusWordN(int iNode);
 int lsmecaGetActualVelocityN(int iNode);
 float lsmecaGetActualAngularVelocityN(int iNode);
 #endif//EMBD_ECATM_H

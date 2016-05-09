@@ -18,6 +18,7 @@
 #include <embdCONIO.h>  //./libs/embedded
 #include <embdCOMMON.h>  //./libs/embedded
 #include <embdMATH.h>  //./libs/embedded
+#include <embdGUI.h>  //./libs/embedded
 /*****************************************************************************/
 #include <stdio.h>
 #include <errno.h>
@@ -41,21 +42,27 @@
 /* Real-time Task */
 /*****************************************************************************/
 #define ECATCTRL_TASK_MODE	T_FPU|T_CPU(0)
-#define ECATCTRL_TASK_PRIORITY	(98) // xeno: 99 , preempt: 80
+#define ECATCTRL_TASK_PRIORITY	(99) // xeno: 99 , preempt: 80
 #define ECATCTRL_TASK_PERIOD	(1000000L)
 
-#define INPTCTRL_TASK_PRIORITY	(99) // xeno: 99 , preempt: 80
-#define INPTCTRL_TASK_PERIOD	(10000000L)
+#define INPTCTRL_TASK_PRIORITY	(98)
+#define INPTCTRL_TASK_PERIOD	(100000000L)
 
+#define GUISEND_TASK_PERIOD	(1000000L)
+#define GUISEND_TASK_PRIORITY	(90)
 
 RT_TASK TskEcatCtrl;
 RT_TASK TskInptCtrl;
+RT_TASK TskGUISend;
 
 RTIME 	RtmEcatMasterAppTime;
 
 #define MEASURE_TIMING //enable for timing analysis
 #ifdef MEASURE_TIMING
+
 RTIME RtmEcatPeriodStart=0, RtmEcatPeriodEnd=0, RtmEcatExecTime=0; 
+int EcatPeriod, EcatExecution, EcatJitter;
+
 #endif
 
 /*****************************************************************************/
@@ -63,6 +70,8 @@ RTIME RtmEcatPeriodStart=0, RtmEcatPeriodEnd=0, RtmEcatExecTime=0;
 /*****************************************************************************/
 #define	NANOSEC_PER_SEC		(1000000000L)
 #define FREQ_PER_SEC(x)		(NANOSEC_PER_SEC/(x))
+#define LSMECAPION_RXNUM	(2)
+
 
 /* ECAT_STATE: EtherCAT State Machine (libs/ecatservo/embdECATM.h)
  * unsigned int  master_state;
@@ -73,30 +82,52 @@ ECAT_STATE	EcatState;
 
 int		quitFlag	= 0;
 char		InptChar	= 0; 
+
+
+int lsmecaStatusWord[LSMECAPION_SLAVENUM] = {0,};
+int lsmecaActualVelR[LSMECAPION_SLAVENUM] = {0,};
+
+int **GUIDataArray;
+
+
+
+
+/*Socket*/
+#define HOST_IP			"192.168.0.58"
+#define	HOST_PORT		(2000)
+#define REMOTE_IP		"192.168.0.5"
+#define	REMOTE_PORT		(80)
+
 /*****************************************************************************/
+
 #ifdef MEASURE_TIMING
+
+//#define PERF_EVAL //enable to analyze EtherCAT Master Performance
+
+#ifdef PERF_EVAL
 #define BUF_SIZE		(60000) //1 minute data for 1ms Cyclic Task
 
 /* MATH_STATS: Simple Statistical Analysis (libs/embedded/embdMATH.h)
- * 	double ave;
- * 	double max;
- * 	double min;
- * 	double std; */
+ * 	float ave;
+ * 	float max;
+ * 	float min;
+ * 	float std; */
 
-MATH_STATS EcatPeriodStat, EcatExecStat;
+MATH_STATS EcatPeriodStat, EcatExecStat, EcatJitterStat;
 
 int  iBufEcatDataCnt = 0;
-long BufEcatPeriodTime[BUF_SIZE] = {0,}; 
-long BufEcatExecTime[BUF_SIZE] = {0,};
 
+int BufEcatPeriodTime[BUF_SIZE] = {0,}; 
+int BufEcatExecTime[BUF_SIZE] 	= {0,};
+int BufEcatJitter[BUF_SIZE]	= {0,};
 
-#define PRINT_TIMING //enable to print results
+//#define PRINT_TIMING //enable to print results
 #ifdef PRINT_TIMING
 FILE *FileEcatTiming;
-#endif 
+#endif //PRINT_TIMING
 
-#endif
-
+#endif //PERFEVAL
+#endif //MEASURE_TIMING
 
 
 

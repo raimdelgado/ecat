@@ -14,7 +14,6 @@
 #define SCALE_100K		(100000)
 #define SCALE_1M		(1000000)
 
-
 /* Error Handling */
 #define _EMBD_RET_ERR_		(-1)
 #define _EMBD_RET_SCC_		(0)
